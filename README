@@ -1,0 +1,85 @@
+Project:
+UUPX = Universal User Port Xfer system.
+
+Purpose:
+To be able to transfer data between any two Commodore 8-bit computers with user ports, from the PET to the C65.
+
+Cable:
+The cable is very simple.  You need two user-port connectors and an 11 (or 12) conductor cable.
+Connect all the pins on the lower row of the user ports together on either end of the cable (A-N), *EXCEPT* you should
+transpose pins B and M on one end of the table.  i.e.:
+
+
+A  B  C  D  E  F  H  J  K  L  M  N
+!  !  !  !  !  !  !  !  !  !  !  !
+!  !  !  !  !  !  !  !  !  !  !  ! 
+A  M  C  D  E  F  H  J  K  L  B  N
+
+Pins A and N are ground.  You only need one of them connected, but connecting both is OK too.
+
+Software:
+
+uupx64.bin   ML = ($c000 / 49152)
+uupxpet.bin  ML = ($1000 / 4096)
+----
+Control software with load, save, transmit, receive code.
+ML = 49152 on C64, and 4096 on PET.
+
+LOAD:
+CALL: SYS ML
+INPUTS:
+   DEVICE CHANNEL 8 opened for read
+   ML + 12 - low byte of buffer locations
+   ML + 13 - high byte of buffer locations
+OUTPUTS:
+   ML + 14 - low byte of buffer end
+   ML + 15 - high byte of buffer end
+   * First two bytes of buffer are load address
+
+SAVE:
+CALL: SYS ML+3
+INPUTS:
+   DEVICE CHANNEL 8 opened for write
+   ML + 12 - low byte of buffer start
+   ML + 13 - high byte of buffer start
+   ML + 14 - low byte of buffer end
+   ML + 15 - high byte of buffer end
+   * Values in ML + 12 and ML + 13 are also the first two bytes written
+   
+XFER OUT:
+CALL: SYS ML+6
+INPUTS:
+   ML + 12 - low byte of buffer start
+   ML + 13 - high byte of buffer start
+   ML + 14 - low byte of buffer end
+   ML + 15 - high byte of buffer end
+   * First two bytes of buffer is receiver buffer address low/high
+OUTPUTS:
+   Routine will exit normally/rts when transfer is complete.   
+   
+XFER IN (RECEIVE)
+CALL: SYS ML+9
+INPUTS:
+   NONE! Will receive data at address specified by transmitter.
+OUTPUTS:
+   ML + 12 - low byte of buffer start
+   ML + 13 - high byte of buffer start
+   ML + 14 - low byte of buffer end
+   ML + 15 - high byte of buffer end
+   * Routine will not exit until the STOP key is pressed.
+     Wait until the transmitter exits, then hit STOP on the receiver.
+
+Important locations:
+1280 datadir = $e843
+1290 datareg = $e841
+1300 datairq = $e84d
+1305 datairs = $e84e
+1310 dataack = $e84c
+
+C64
+1280 datadir = $dd03
+1290 datareg = $dd01
+1300 datairq = $dd0d -   16?!    act=144, clear=127
+1310 dataack = $dd00 - 56576 act=3, inact=7
+
+
